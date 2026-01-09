@@ -1,8 +1,5 @@
 {
-  "rbac-folders": [
-    "folder-1",
-    "folder-2"
-  ],
+  "rbac-folders": ["folder-1", "folder-2"],
   "folder-1": [
     {
       "name": "infrastructure-provision",
