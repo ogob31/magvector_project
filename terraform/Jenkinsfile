@@ -3,17 +3,23 @@ pipeline {
 
     options {
         timeout(time: 10, unit: 'MINUTES')
+        timestamps()
     }
 
     parameters {
-        string(name: 'GITHUB_CREDENTIAL', defaultValue: 'github_cred', description: 'Github access credentials id')
-        string(name: 'GITHUB_REPO_URL', defaultValue: 'https://github.com/ogob31/magvector_project.git', description: 'Github repository url')
-        string(name: 'GITHUB_BRANCH', defaultValue: 'main', description: 'Github branch for your build')
-        choice(name: 'TERRAFORM_ACTION', choices: ['apply', 'destroy'], description: 'Select Terraform action: Apply or Destroy')
+        string(name: 'GITHUB_CREDENTIAL', defaultValue: 'github_cred', description: 'GitHub credentials ID in Jenkins')
+        string(name: 'GITHUB_REPO_URL', defaultValue: 'https://github.com/ogob31/magvector_project.git', description: 'GitHub repository URL')
+        string(name: 'GITHUB_BRANCH', defaultValue: 'main', description: 'GitHub branch to build')
+        choice(name: 'TERRAFORM_ACTION', choices: ['apply', 'destroy'], description: 'Terraform action')
     }
 
     environment {
         AWS_REGION = 'us-east-1'
+        TF_IN_AUTOMATION = 'true'
+        TF_INPUT = 'false'
+        // Backend names you said already exist
+        TF_STATE_BUCKET = 'magvector'
+        TF_LOCK_TABLE   = 'magvector'
     }
 
     stages {
@@ -35,13 +41,46 @@ pipeline {
             }
         }
 
+        stage("Preflight (AWS + Tools)") {
+            steps {
+                dir('terraform') {
+                    sh '''
+                      set -e
+                      echo "=== Terraform / AWS CLI versions ==="
+                      terraform --version
+                      aws --version
+
+                      echo "=== AWS identity (must be jenkins-role) ==="
+                      aws sts get-caller-identity
+
+                      echo "=== Validate backend resources exist & are reachable ==="
+                      aws s3api head-bucket --bucket "$TF_STATE_BUCKET"
+                      aws dynamodb describe-table --table-name "$TF_LOCK_TABLE" --region "$AWS_REGION" >/dev/null
+
+                      echo "=== Preflight OK ==="
+                    '''
+                }
+            }
+        }
+
         stage('Terraform Init') {
             steps {
                 dir('terraform') {
                     sh '''
                       set -e
-                      terraform --version
-                      terraform init
+                      echo "=== Terraform init (reconfigure backend) ==="
+                      terraform init -reconfigure
+                    '''
+                }
+            }
+        }
+
+        stage('Terraform Validate') {
+            steps {
+                dir('terraform') {
+                    sh '''
+                      set -e
+                      terraform validate
                     '''
                 }
             }
