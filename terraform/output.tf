@@ -3,8 +3,9 @@ output "lb_hostname" {
   value       = aws_lb.main.dns_name
 }
 output "target_group_arn" {
-  value = aws_lb_target_group.main.arn
+  vpc_id = data.aws_vpc.selected.id
 }
 output "security_group_id" {
-  value = aws_security_group.ecs.id
+ vpc_id = data.aws_vpc.selected.id
+
 }
