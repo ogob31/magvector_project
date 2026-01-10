@@ -14,12 +14,14 @@ pipeline {
     }
 
     environment {
-        AWS_REGION = 'us-east-1'
-        TF_IN_AUTOMATION = 'true'
-        TF_INPUT = 'false'
-        // Backend names you said already exist
-        TF_STATE_BUCKET = 'magvector'
-        TF_LOCK_TABLE   = 'magvector'
+    AWS_REGION = 'us-east-1'
+    AWS_DEFAULT_REGION = 'us-east-1'
+    TF_IN_AUTOMATION = 'true'
+    TF_INPUT = 'false'
+    TF_STATE_BUCKET = 'magvector'
+    TF_LOCK_TABLE   = 'magvector'
+}
+
     }
 
     stages {
