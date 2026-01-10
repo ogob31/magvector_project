@@ -1,8 +1,9 @@
 terraform {
   backend "s3" {
-    bucket         = "test-app-s3-bucket-1"
-    key            = "terraform_statefile"   
+    bucket         = "magvector"
+    key            = "magvector/terraform.tfstate"
     region         = "us-east-1"
-    dynamodb_table = "test-app" 
+    dynamodb_table = "magvector"
+    encrypt        = true
   }
 }
