@@ -14,18 +14,19 @@ pipeline {
     }
 
     environment {
-    AWS_REGION = 'us-east-1'
-    AWS_DEFAULT_REGION = 'us-east-1'
-    TF_IN_AUTOMATION = 'true'
-    TF_INPUT = 'false'
-    TF_STATE_BUCKET = 'magvector'
-    TF_LOCK_TABLE   = 'magvector'
-}
+        AWS_REGION          = 'us-east-1'
+        AWS_DEFAULT_REGION  = 'us-east-1'
 
+        TF_IN_AUTOMATION    = 'true'
+        TF_INPUT            = 'false'
+
+        // Backend names (must exist in AWS)
+        TF_STATE_BUCKET     = 'magvector'
+        TF_LOCK_TABLE       = 'magvector'
     }
 
     stages {
-        stage("Validate Parameters") {
+        stage('Validate Parameters') {
             steps {
                 script {
                     if (!params.TERRAFORM_ACTION?.trim()) {
@@ -35,7 +36,7 @@ pipeline {
             }
         }
 
-        stage("Checkout Code From GitHub") {
+        stage('Checkout Code From GitHub') {
             steps {
                 git branch: "${params.GITHUB_BRANCH}",
                     credentialsId: "${params.GITHUB_CREDENTIAL}",
@@ -43,7 +44,7 @@ pipeline {
             }
         }
 
-        stage("Preflight (AWS + Tools)") {
+        stage('Preflight (AWS + Tools)') {
             steps {
                 dir('terraform') {
                     sh '''
