@@ -22,7 +22,7 @@ pipeline {
 
         // Backend names (must exist in AWS)
         TF_STATE_BUCKET     = 'magvector'
-        TF_LOCK_TABLE       = 'magvector'
+        TF_LOCK_TABLE       = 'magvector-tf-locks'
     }
 
     stages {
