@@ -5,10 +5,10 @@ variable "aws_region" {
 }
 
 variable "vpc_id" {
-  description = "The ID of the VPC where the ECS cluster will be deployed"    
+  description = "VPC ID where ECS/LB resources will be created"
   type        = string
-  default     = "vpc-08a20b564a94cad98"
 }
+
 
 variable "subnet_ids" {
   description = "A list of subnet IDs where the ECS services will be deployed"
