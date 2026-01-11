@@ -5,37 +5,33 @@ variable "aws_region" {
 }
 
 variable "vpc_id" {
-  description = "VPC ID where ECS/LB resources will be created"
+  description = "VPC ID where ECS and Load Balancer resources will be created"
   type        = string
 }
 
-
 variable "subnet_ids" {
-  description = "A list of subnet IDs where the ECS services will be deployed"
+  description = "Subnets where ECS services and ALB will run"
   type        = list(string)
-  default     = ["subnet-0b355c1e081bfb317","subnet-04e7a2e028dcb65ea"]       
 }
 
 variable "cluster_name" {
   description = "The name of the ECS cluster"
   type        = string
-  default     = "test-ecs-cluster"
 }
 
 variable "service_name" {
   description = "The name of the ECS service"
   type        = string
-  default     = "test-ecs-service"
 }
 
 variable "container_port" {
-  description = "The port on which the container will listen"
+  description = "The port exposed by the container"
   type        = number
   default     = 80
 }
 
 variable "desired_count" {
-  description = "The number of desired tasks for the ECS service"
+  description = "Number of ECS tasks to run"
   type        = number
   default     = 3
 }
