@@ -14,15 +14,15 @@ pipeline {
     }
 
     environment {
-        AWS_REGION          = 'us-east-1'
-        AWS_DEFAULT_REGION  = 'us-east-1'
+        AWS_REGION          = 'eu-central-1'
+        AWS_DEFAULT_REGION  = 'eu-central-1'
 
         TF_IN_AUTOMATION    = 'true'
         TF_INPUT            = 'false'
 
-        // Backend names (must exist in AWS)
-        TF_STATE_BUCKET     = 'magvector'
-        TF_LOCK_TABLE       = 'magvector-tf-locks'
+         // MUST match backend.tf
+    TF_STATE_BUCKET     = 'magvector-terraform-state-051826742726'
+    TF_LOCK_TABLE       = 'terraform-lock-table'
     }
 
     stages {
