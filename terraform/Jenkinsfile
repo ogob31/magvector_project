@@ -1,127 +1,132 @@
 pipeline {
-    agent any
+  agent any
 
-    options {
-        timeout(time: 10, unit: 'MINUTES')
-        timestamps()
+  options {
+    timeout(time: 20, unit: 'MINUTES')
+    timestamps()
+    skipDefaultCheckout(true)
+  }
+
+  parameters {
+    string(name: 'GITHUB_CREDENTIAL', defaultValue: 'github_cred', description: 'Jenkins credentials ID for GitHub PAT')
+    string(name: 'GITHUB_REPO_URL', defaultValue: 'https://github.com/ogob31/magvector_project.git', description: 'GitHub repository URL')
+    string(name: 'GITHUB_BRANCH', defaultValue: 'main', description: 'GitHub branch')
+    choice(name: 'TERRAFORM_ACTION', choices: ['apply', 'destroy'], description: 'Terraform action')
+  }
+
+  environment {
+    AWS_REGION          = 'eu-central-1'
+    AWS_DEFAULT_REGION  = 'eu-central-1'
+
+    TF_IN_AUTOMATION    = 'true'
+    TF_INPUT            = 'false'
+
+    // MUST match terraform/backend.tf
+    TF_STATE_BUCKET     = 'magvector-terraform-state-051826742726'
+    TF_LOCK_TABLE       = 'terraform-lock-table'
+    TF_STATE_KEY        = 'magvector/terraform.tfstate'
+  }
+
+  stages {
+
+    stage('Checkout') {
+      steps {
+        cleanWs()
+        checkout([
+          $class: 'GitSCM',
+          branches: [[name: "*/${params.GITHUB_BRANCH}"]],
+          userRemoteConfigs: [[
+            url: params.GITHUB_REPO_URL,
+            credentialsId: params.GITHUB_CREDENTIAL
+          ]]
+        ])
+      }
     }
 
-    parameters {
-        string(name: 'GITHUB_CREDENTIAL', defaultValue: 'github_cred', description: 'GitHub credentials ID in Jenkins')
-        string(name: 'GITHUB_REPO_URL', defaultValue: 'https://github.com/ogob31/magvector_project.git', description: 'GitHub repository URL')
-        string(name: 'GITHUB_BRANCH', defaultValue: 'main', description: 'GitHub branch to build')
-        choice(name: 'TERRAFORM_ACTION', choices: ['apply', 'destroy'], description: 'Terraform action')
+    stage('Preflight') {
+      steps {
+        dir('terraform') {
+          sh '''
+            set -euo pipefail
+            echo "=== Versions ==="
+            terraform --version
+            aws --version
+
+            echo "=== AWS identity ==="
+            aws sts get-caller-identity
+
+            echo "=== backend.tf Jenkins is using (MUST be eu-central-1 + magvector-terraform-state...) ==="
+            sed -n '1,120p' backend.tf
+
+            echo "=== Backend resources reachable ==="
+            aws s3api head-bucket --bucket "$TF_STATE_BUCKET" >/dev/null
+            aws dynamodb describe-table --table-name "$TF_LOCK_TABLE" --region "$AWS_REGION" >/dev/null
+          '''
+        }
+      }
     }
 
-    environment {
-        AWS_REGION          = 'eu-central-1'
-        AWS_DEFAULT_REGION  = 'eu-central-1'
+    stage('Terraform Init') {
+      steps {
+        dir('terraform') {
+          sh '''
+            set -euo pipefail
+            rm -rf .terraform .terraform.lock.hcl || true
 
-        TF_IN_AUTOMATION    = 'true'
-        TF_INPUT            = 'false'
-
-        // MUST match backend.tf
-        TF_STATE_BUCKET     = 'magvector-terraform-state-051826742726'
-        TF_LOCK_TABLE       = 'terraform-lock-table'
+            # Force correct backend config (prevents old bucket/table from being used)
+            terraform init -reconfigure -no-color \
+              -backend-config="bucket=${TF_STATE_BUCKET}" \
+              -backend-config="key=${TF_STATE_KEY}" \
+              -backend-config="region=${AWS_REGION}" \
+              -backend-config="dynamodb_table=${TF_LOCK_TABLE}" \
+              -backend-config="encrypt=true"
+          '''
+        }
+      }
     }
 
-    stages {
-        stage('Validate Parameters') {
-            steps {
-                script {
-                    if (!params.TERRAFORM_ACTION?.trim()) {
-                        error('TERRAFORM_ACTION is required. Please choose either "apply" or "destroy".')
-                    }
-                }
-            }
+    stage('Terraform Validate') {
+      steps {
+        dir('terraform') {
+          sh '''
+            set -euo pipefail
+            terraform fmt -check
+            terraform validate -no-color
+          '''
         }
-
-        stage('Checkout Code From GitHub') {
-            steps {
-                git branch: "${params.GITHUB_BRANCH}",
-                    credentialsId: "${params.GITHUB_CREDENTIAL}",
-                    url: "${params.GITHUB_REPO_URL}"
-            }
-        }
-
-        stage('Preflight (AWS + Tools)') {
-            steps {
-                dir('terraform') {
-                    sh '''
-                      set -e
-                      echo "=== Terraform / AWS CLI versions ==="
-                      terraform --version
-                      aws --version
-
-                      echo "=== AWS identity ==="
-                      aws sts get-caller-identity
-
-                      echo "=== Validate backend resources exist & are reachable ==="
-                      aws s3api head-bucket --bucket "$TF_STATE_BUCKET" >/dev/null
-                      aws dynamodb describe-table --table-name "$TF_LOCK_TABLE" --region "$AWS_REGION" >/dev/null
-
-                      echo "=== Preflight OK ==="
-                    '''
-                }
-            }
-        }
-
-        stage('Terraform Init') {
-            steps {
-                dir('terraform') {
-                    sh '''
-                      set -e
-                      echo "=== Clean local Terraform cache (avoid stale backend) ==="
-                      rm -rf .terraform .terraform.lock.hcl
-
-                      echo "=== backend.tf Jenkins is using ==="
-                      cat backend.tf
-                      echo ""
-
-                      echo "=== Terraform init (reconfigure backend) ==="
-                      terraform init -reconfigure
-                    '''
-                }
-            }
-        }
-
-        stage('Terraform Validate') {
-            steps {
-                dir('terraform') {
-                    sh '''
-                      set -e
-                      terraform validate
-                    '''
-                }
-            }
-        }
-
-        stage('Terraform Plan') {
-            steps {
-                dir('terraform') {
-                    sh '''
-                      set -e
-                      terraform plan
-                    '''
-                }
-            }
-        }
-
-        stage('Terraform Apply Or Destroy') {
-            steps {
-                dir('terraform') {
-                    sh """
-                      set -e
-                      terraform ${params.TERRAFORM_ACTION} -auto-approve
-                    """
-                }
-            }
-        }
+      }
     }
 
-    post {
-        always {
-            cleanWs()
+    stage('Terraform Plan') {
+      steps {
+        dir('terraform') {
+          sh '''
+            set -euo pipefail
+            terraform plan -no-color -out=tfplan
+          '''
         }
+      }
     }
+
+    stage('Terraform Apply/Destroy') {
+      steps {
+        dir('terraform') {
+          sh """
+            set -euo pipefail
+            if [ "${params.TERRAFORM_ACTION}" = "apply" ]; then
+              terraform apply -no-color -auto-approve tfplan
+            else
+              terraform destroy -no-color -auto-approve
+            fi
+          """
+        }
+      }
+    }
+  }
+
+  post {
+    always {
+      cleanWs()
+    }
+  }
 }
