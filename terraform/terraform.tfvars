@@ -1,12 +1,13 @@
-aws_region   = "us-east-1"
+aws_region = "eu-central-1"
 
-vpc_id = "vpc-0dbcdd5a9310f4f50"
+project_name = "magvector"
+
+vpc_id = "vpc-0372a432036e888d7"
 
 subnet_ids = [
-  "subnet-0b355c1e081bfb317",
-  "subnet-04e7a2e028dcb65ea"
+  "subnet-070e445029164c698",
+  "subnet-0e7cbd20eac67f034"
 ]
 
 cluster_name = "magvector-cluster"
 service_name = "magvector-service"
-
