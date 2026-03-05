@@ -1,9 +1,9 @@
 terraform {
   backend "s3" {
-    bucket         = "magvector"
+    bucket         = "magvector-terraform-state-051826742726"
     key            = "magvector/terraform.tfstate"
-    region         = "us-east-1"
-    dynamodb_table = "magvector-tf-locks"
+    region         = "eu-central-1"
+    dynamodb_table = "terraform-lock-table"
     encrypt        = true
   }
 }
