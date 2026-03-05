@@ -1,7 +1,7 @@
 variable "aws_region" {
-  description = "The AWS region to deploy resources"
+  description = "AWS region where resources will be deployed"
   type        = string
-  default     = "us-east-1"
+  default     = "eu-central-1"
 }
 
 variable "vpc_id" {
@@ -10,28 +10,37 @@ variable "vpc_id" {
 }
 
 variable "subnet_ids" {
-  description = "Subnets where ECS services and ALB will run"
+  description = "Subnets where ECS services and the Application Load Balancer will run"
   type        = list(string)
 }
 
 variable "cluster_name" {
-  description = "The name of the ECS cluster"
+  description = "Name of the ECS cluster"
   type        = string
 }
 
 variable "service_name" {
-  description = "The name of the ECS service"
+  description = "Name of the ECS service"
   type        = string
 }
 
 variable "container_port" {
-  description = "The port exposed by the container"
+  description = "Port exposed by the application container"
   type        = number
-  default     = 80
+  default     = 3000
 }
 
 variable "desired_count" {
   description = "Number of ECS tasks to run"
   type        = number
-  default     = 3
+  default     = 1
+}
+variable "project_name" {
+  description = "Project name prefix for all resources"
+  type        = string
+}
+
+variable "project_name" {
+  description = "Project name prefix used for naming AWS resources"
+  type        = string
 }
