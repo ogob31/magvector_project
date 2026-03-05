@@ -20,9 +20,9 @@ pipeline {
         TF_IN_AUTOMATION    = 'true'
         TF_INPUT            = 'false'
 
-         // MUST match backend.tf
-    TF_STATE_BUCKET     = 'magvector-terraform-state-051826742726'
-    TF_LOCK_TABLE       = 'terraform-lock-table'
+        // MUST match backend.tf
+        TF_STATE_BUCKET     = 'magvector-terraform-state-051826742726'
+        TF_LOCK_TABLE       = 'terraform-lock-table'
     }
 
     stages {
@@ -53,11 +53,11 @@ pipeline {
                       terraform --version
                       aws --version
 
-                      echo "=== AWS identity (must be jenkins-role) ==="
+                      echo "=== AWS identity ==="
                       aws sts get-caller-identity
 
                       echo "=== Validate backend resources exist & are reachable ==="
-                      aws s3api head-bucket --bucket "$TF_STATE_BUCKET"
+                      aws s3api head-bucket --bucket "$TF_STATE_BUCKET" >/dev/null
                       aws dynamodb describe-table --table-name "$TF_LOCK_TABLE" --region "$AWS_REGION" >/dev/null
 
                       echo "=== Preflight OK ==="
@@ -71,6 +71,13 @@ pipeline {
                 dir('terraform') {
                     sh '''
                       set -e
+                      echo "=== Clean local Terraform cache (avoid stale backend) ==="
+                      rm -rf .terraform .terraform.lock.hcl
+
+                      echo "=== backend.tf Jenkins is using ==="
+                      cat backend.tf
+                      echo ""
+
                       echo "=== Terraform init (reconfigure backend) ==="
                       terraform init -reconfigure
                     '''
