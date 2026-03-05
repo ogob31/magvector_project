@@ -40,7 +40,3 @@ variable "project_name" {
   type        = string
 }
 
-variable "project_name" {
-  description = "Project name prefix used for naming AWS resources"
-  type        = string
-}
