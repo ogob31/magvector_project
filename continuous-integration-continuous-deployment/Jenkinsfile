@@ -10,13 +10,10 @@ pipeline {
     string(name: 'GITHUB_CREDENTIAL', defaultValue: 'github_cred', description: 'Github access credentials id')
     string(name: 'GITHUB_BRANCH', defaultValue: 'main', description: 'Branch to build from')
     string(name: 'GITHUB_REPO_URL', defaultValue: 'https://github.com/ogob31/magvector_project.git', description: 'Repository URL to build from')
-
     string(name: 'VERSION', defaultValue: "V00${BUILD_ID}", description: 'Version of Docker image to be built, e.g., V001')
-
     string(name: 'TASK_DEF_JSON', defaultValue: 'continuous-integration-continuous-deployment/task-def.json', description: 'Path to the task definition JSON file')
     string(name: 'CREATE_SERVICE_FILE', defaultValue: 'continuous-integration-continuous-deployment/create-ecs-service.json', description: 'Path to the create service JSON file')
     string(name: 'UPDATE_SERVICE_FILE', defaultValue: 'continuous-integration-continuous-deployment/update-ecs-service.json', description: 'Path to the update service JSON file')
-
     string(name: 'SERVICE_NAME', defaultValue: 'magvector-service', description: 'ECS Service Name')
     string(name: 'ECS_CLUSTER_NAME', defaultValue: 'magvector-cluster', description: 'ECS Cluster Name')
   }
@@ -24,17 +21,17 @@ pipeline {
   environment {
     AWS_REGION         = "eu-central-1"
     AWS_DEFAULT_REGION = "eu-central-1"
-
-    AWS_ACCOUNT_ID = "051826742726"
-    ECR_REPO       = "magvector-app"
-    ECR_REGISTRY   = "${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com"
-
+    AWS_ACCOUNT_ID     = "051826742726"
+    ECR_REPO           = "magvector-app"
+    ECR_REGISTRY       = "${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com"
     DOCKER_IMAGE_LOCAL = "test-app-html-image"
   }
 
   stages {
     stage('Clean Workspace') {
-      steps { cleanWs() }
+      steps {
+        cleanWs()
+      }
     }
 
     stage('Clone GitHub Repo') {
@@ -73,12 +70,9 @@ pipeline {
 
           sh """
             set -euo pipefail
-
             aws ecr get-login-password --region "${AWS_REGION}" | docker login --username AWS --password-stdin "${ECR_REGISTRY}"
-
             docker tag "${DOCKER_IMAGE_LOCAL}" "${fullImage}"
             docker push "${fullImage}"
-
             echo "PUSHED_IMAGE=${fullImage}" > pushed_image.env
           """
         }
@@ -91,12 +85,9 @@ pipeline {
           def pushedImage = readFile('pushed_image.env').trim().split('=')[1]
           def taskDefJson = readFile(file: params.TASK_DEF_JSON)
 
-          // your container name is confirmed as "test-app"
-          def containerName = "test-app"
-
           taskDefJson = taskDefJson.replaceFirst(
-            /("name"\\s*:\\s*"${containerName}"[\\s\\S]*?"image"\\s*:\\s*")([^"]+)(")/,
-            "\$1${pushedImage}\$3"
+            /"image"\s*:\s*"[^"]+"/,
+            "\"image\": \"${pushedImage}\""
           )
 
           writeFile(file: params.TASK_DEF_JSON, text: taskDefJson)
@@ -124,11 +115,11 @@ pipeline {
           echo "Task Definition ARN: ${taskDefArn}"
 
           def createServiceJson = readFile(file: params.CREATE_SERVICE_FILE)
-          createServiceJson = createServiceJson.replaceFirst(/"taskDefinition"\\s*:\\s*"[^"]+"/, "\"taskDefinition\": \"${taskDefArn}\"")
+          createServiceJson = createServiceJson.replaceFirst(/"taskDefinition"\s*:\s*"[^"]+"/, "\"taskDefinition\": \"${taskDefArn}\"")
           writeFile(file: params.CREATE_SERVICE_FILE, text: createServiceJson)
 
           def updateServiceJson = readFile(file: params.UPDATE_SERVICE_FILE)
-          updateServiceJson = updateServiceJson.replaceFirst(/"taskDefinition"\\s*:\\s*"[^"]+"/, "\"taskDefinition\": \"${taskDefArn}\"")
+          updateServiceJson = updateServiceJson.replaceFirst(/"taskDefinition"\s*:\s*"[^"]+"/, "\"taskDefinition\": \"${taskDefArn}\"")
           writeFile(file: params.UPDATE_SERVICE_FILE, text: updateServiceJson)
         }
       }

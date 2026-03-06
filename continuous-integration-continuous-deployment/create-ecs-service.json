@@ -1,18 +1,18 @@
 {
-  "cluster": "test-ecs-cluster",
-  "serviceName": "test-ecs-service",
-  "taskDefinition": "arn:aws:ecs:us-east-1:905418280053:task-definition/test-app:1",
+  "cluster": "magvector-cluster",
+  "serviceName": "magvector-service",
+  "taskDefinition": "arn:aws:ecs:eu-central-1:051826742726:task-definition/magvector-app:1",
   "desiredCount": 3,
   "launchType": "FARGATE",
   "platformVersion": "LATEST",
   "networkConfiguration": {
     "awsvpcConfiguration": {
       "subnets": [
-        "subnet-0b355c1e081bfb317",
-        "subnet-04e7a2e028dcb65ea"
+        "subnet-070e445029164c698",
+        "subnet-0e7cbd20eac67f034"
       ],
       "securityGroups": [
-        "sg-0418a94adf3fcf7ea"
+        "sg-00314d5b2e6bbbc66"
       ],
       "assignPublicIp": "ENABLED"
     }
