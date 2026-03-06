@@ -1,3 +1,6 @@
+import groovy.json.JsonOutput
+import groovy.json.JsonSlurperClassic
+
 pipeline {
   agent any
 
@@ -25,6 +28,7 @@ pipeline {
     ECR_REPO           = "magvector-app"
     ECR_REGISTRY       = "${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com"
     DOCKER_IMAGE_LOCAL = "test-app-html-image"
+    CONTAINER_NAME     = "test-app"
   }
 
   stages {
@@ -83,14 +87,25 @@ pipeline {
       steps {
         script {
           def pushedImage = readFile('pushed_image.env').trim().split('=')[1]
-          def taskDefJson = readFile(file: params.TASK_DEF_JSON)
 
-          taskDefJson = taskDefJson.replaceFirst(
-            /"image"\s*:\s*"[^"]+"/,
-            "\"image\": \"${pushedImage}\""
+          def taskDef = new JsonSlurperClassic().parseText(readFile(params.TASK_DEF_JSON))
+          def containerFound = false
+
+          taskDef.containerDefinitions.each { c ->
+            if (c.name == env.CONTAINER_NAME) {
+              c.image = pushedImage
+              containerFound = true
+            }
+          }
+
+          if (!containerFound) {
+            error("Container name '${env.CONTAINER_NAME}' not found in ${params.TASK_DEF_JSON}")
+          }
+
+          writeFile(
+            file: params.TASK_DEF_JSON,
+            text: JsonOutput.prettyPrint(JsonOutput.toJson(taskDef))
           )
-
-          writeFile(file: params.TASK_DEF_JSON, text: taskDefJson)
 
           sh "echo 'Updated image lines:' && grep -n '\"image\"' ${params.TASK_DEF_JSON} | head -n 10"
         }
@@ -114,13 +129,19 @@ pipeline {
 
           echo "Task Definition ARN: ${taskDefArn}"
 
-          def createServiceJson = readFile(file: params.CREATE_SERVICE_FILE)
-          createServiceJson = createServiceJson.replaceFirst(/"taskDefinition"\s*:\s*"[^"]+"/, "\"taskDefinition\": \"${taskDefArn}\"")
-          writeFile(file: params.CREATE_SERVICE_FILE, text: createServiceJson)
+          def createService = new JsonSlurperClassic().parseText(readFile(params.CREATE_SERVICE_FILE))
+          createService.taskDefinition = taskDefArn
+          writeFile(
+            file: params.CREATE_SERVICE_FILE,
+            text: JsonOutput.prettyPrint(JsonOutput.toJson(createService))
+          )
 
-          def updateServiceJson = readFile(file: params.UPDATE_SERVICE_FILE)
-          updateServiceJson = updateServiceJson.replaceFirst(/"taskDefinition"\s*:\s*"[^"]+"/, "\"taskDefinition\": \"${taskDefArn}\"")
-          writeFile(file: params.UPDATE_SERVICE_FILE, text: updateServiceJson)
+          def updateService = new JsonSlurperClassic().parseText(readFile(params.UPDATE_SERVICE_FILE))
+          updateService.taskDefinition = taskDefArn
+          writeFile(
+            file: params.UPDATE_SERVICE_FILE,
+            text: JsonOutput.prettyPrint(JsonOutput.toJson(updateService))
+          )
         }
       }
     }
