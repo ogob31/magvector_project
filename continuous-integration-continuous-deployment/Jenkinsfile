@@ -118,6 +118,16 @@ PY
       }
     }
 
+    stage('Show Task Definition') {
+      steps {
+        sh """
+          echo "===== TASK DEF FILE ====="
+          cat ${params.TASK_DEF_JSON}
+          echo "========================="
+        """
+      }
+    }
+
     stage('Register Task Definition') {
       steps {
         script {
