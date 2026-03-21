@@ -4,12 +4,11 @@
   "requiresCompatibilities": ["FARGATE"],
   "cpu": "1024",
   "memory": "2048",
-  "executionRoleArn": "arn:aws:iam::905418280053:role/ecsTaskExecutionRole",
-  "taskRoleArn": "arn:aws:iam::905418280053:role/ecsTaskExecutionRole",
+  "executionRoleArn": "arn:aws:iam::051826742726:role/ecsTaskExecutionRole",
   "containerDefinitions": [
     {
       "name": "test-app",
-      "image": "905418280053.dkr.ecr.us-east-1.amazonaws.com/test-repo:V0023",
+      "image": "051826742726.dkr.ecr.eu-central-1.amazonaws.com/magvector-app:latest",
       "essential": true,
       "portMappings": [
         {
@@ -22,7 +21,7 @@
         "logDriver": "awslogs",
         "options": {
           "awslogs-group": "/ecs/test-app",
-          "awslogs-region": "us-east-1",
+          "awslogs-region": "eu-central-1",
           "awslogs-stream-prefix": "ecs"
         }
       }
