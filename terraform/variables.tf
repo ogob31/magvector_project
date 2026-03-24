@@ -27,7 +27,7 @@ variable "service_name" {
 variable "container_port" {
   description = "Port exposed by the application container"
   type        = number
-  default     = 3000
+  default     = 80
 }
 
 variable "desired_count" {
