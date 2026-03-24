@@ -17,19 +17,18 @@ resource "aws_lb" "main" {
 #############################################
 
 resource "aws_lb_target_group" "main" {
-  name        = "magvector-tg"
-  port        = var.container_port
+  name        = "magvector-tg-80"
+  port        = 80
   protocol    = "HTTP"
   target_type = "ip"
   vpc_id      = var.vpc_id
 
   health_check {
-    path                = "/"
-    interval            = 15
-    timeout             = 5
-    healthy_threshold   = 2
-    unhealthy_threshold = 3
-    matcher             = "200"
+    path = "/"
+  }
+
+  lifecycle {
+    create_before_destroy = true
   }
 }
 
