@@ -67,7 +67,7 @@ pipeline {
     stage('Push To ECR (eu-central-1)') {
       steps {
         script {
-          def fullImage = "${env.ECR_REGISTRY}/${env.ECR_REPO}:${params.VERSION}"
+OA          def fullImage = "${env.ECR_REGISTRY}/${env.ECR_REPO}:B${env.BUILD_NUMBER}"
 
           sh """
             set -euo pipefail
