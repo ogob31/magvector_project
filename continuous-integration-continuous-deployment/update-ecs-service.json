@@ -17,7 +17,7 @@
   },
   "loadBalancers": [
     {
-      "targetGroupArn": "arn:aws:elasticloadbalancing:eu-central-1:051826742726:targetgroup/magvector-tg/c18702afdfc82855",
+      "targetGroupArn": "arn:aws:elasticloadbalancing:eu-central-1:051826742726:targetgroup/magvector-tg-80/8df166e816ee7378",
       "containerName": "test-app",
       "containerPort": 80
     }
