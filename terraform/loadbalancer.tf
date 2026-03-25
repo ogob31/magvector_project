@@ -34,8 +34,6 @@ resource "aws_lb_target_group" "main" {
 
   lifecycle {
     create_before_destroy = true
-  }
-}
 
 #############################################
 # Listener
